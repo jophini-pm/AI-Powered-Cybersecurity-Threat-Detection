@@ -1,48 +1,42 @@
-
 from flask import Flask, request, jsonify
 import joblib
 import numpy as np
+import os
 
-# Load the trained model
+# ✅ Load the trained model
 model = joblib.load("cybersecurity_model.pkl")
 
-# Initialize Flask app
 app = Flask(__name__)
 
+# ✅ Route for the root path
+@app.route('/')
+def home():
+    return "✅ AI-Powered Cybersecurity Threat Detection is live and running!"
+
+# ✅ Route for making predictions
 @app.route('/predict', methods=['POST'])
 def predict():
-    try:
-        # Get JSON request data
-        data = request.get_json()
-        
-        # Extract features
-        features = np.array([[
-            data["protocol"],
-            data["flow_duration"],
-            data["total_forward_packets"],
-            data["total_backward_packets"],
-            data["total_forward_packets_length"],
-            data["total_backward_packets_length"],
-            data["forward_packet_length_mean"],
-            data["backward_packet_length_mean"],
-            data["forward_packets_per_second"],
-            data["backward_packets_per_second"],
-            data["forward_iat_mean"],
-            data["backward_iat_mean"],
-            data["flow_iat_mean"],
-            data["flow_packets_per_seconds"],
-            data["flow_bytes_per_seconds"]
-        ]])
+    data = request.get_json()
+    features = np.array([[data.get("protocol", 0),
+                          data.get("flow_duration", 0),
+                          data.get("total_forward_packets", 0),
+                          data.get("total_backward_packets", 0),
+                          data.get("total_forward_packets_length", 0),
+                          data.get("total_backward_packets_length", 0),
+                          data.get("forward_packet_length_mean", 0),
+                          data.get("backward_packet_length_mean", 0),
+                          data.get("forward_packets_per_second", 0),
+                          data.get("backward_packets_per_second", 0),
+                          data.get("forward_iat_mean", 0),
+                          data.get("backward_iat_mean", 0),
+                          data.get("flow_iat_mean", 0),
+                          data.get("flow_packets_per_seconds", 0),
+                          data.get("flow_bytes_per_seconds", 0)]])
+    prediction = model.predict(features)
+    return jsonify({"Threat_Detected": bool(prediction[0])})
 
-        # Make prediction
-        prediction = model.predict(features)
-        
-        return jsonify({"Threat_Detected": bool(prediction[0])})
-    
-    except Exception as e:
-        return jsonify({"error": str(e)})
 
+# ✅ Run app in the right way for Render
 if __name__ == '__main__':
-    import os
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
